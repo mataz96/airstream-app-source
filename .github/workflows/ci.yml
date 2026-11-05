@@ -29,16 +29,15 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build and Push Blue Image (v1.0-blue)
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+    - name: Set Release Version
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:v1.0-blue .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:v1.0-blue
+        VERSION="v1.0.${{ github.run_number }}"
+        echo "IMAGE_TAG=$VERSION" >> $GITHUB_ENV
+        echo "Building image version: $VERSION"
 
-    - name: Build and Push Green Image (v2.0-green)
+    - name: Build and Push Docker Image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:v2.0-green .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:v2.0-green
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
