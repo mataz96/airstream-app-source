@@ -1,15 +1,12 @@
-FROM eclipse-temurin:17-jdk-jammy AS builder
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
 COPY pom.xml .
-COPY .mvn .mvn
-COPY mvnw .
-
-RUN ./mvnw dependency:go-offline -B
+RUN mvn dependency:go-offline -B
 
 COPY src ./src
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jre-jammy
 
