@@ -1,4 +1,4 @@
-name: CI Pipeline - Build and Push to ECR
+name: CI Pipeline - Build, Push and Update GitOps
 
 on:
   push:
@@ -41,3 +41,17 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Update Image Tag in GitOps Repository
+      env:
+        GITOPS_REPO: "mataz96/airstream-gitops-manifests"
+        NEW_TAG: $IMAGE_TAG
+        GH_TOKEN: ${{ secrets.PAT_GITHUB }}
+      run: |
+        git clone https://x-access-token:$GH_TOKEN@github.com/$GITOPS_REPO.git gitops-repo
+        cd gitops-repo/k8s
+        sed -i "s/newTag:.*/newTag: $NEW_TAG/g" kustomization.yaml
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git commit -am "chore(gitops): auto-promote petclinic image to $NEW_TAG"
+        git push origin main
