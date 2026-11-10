@@ -1,4 +1,4 @@
-name: CI Pipeline - Build, Push and Update GitOps
+name: CI Pipeline - Build, Push and Create GitOps PR
 
 on:
   push:
@@ -42,15 +42,23 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    - name: Update Image Tag in GitOps Repository
+    - name: Create Automated GitOps Pull Request
       env:
         GITOPS_REPO: "mataz96/airstream-gitops-manifests"
         GH_TOKEN: ${{ secrets.PAT_GITHUB }}
       run: |
         git clone https://x-access-token:$GH_TOKEN@github.com/$GITOPS_REPO.git gitops-repo
-        cd gitops-repo/k8s
-        sed -i "s/newTag:.*/newTag: $IMAGE_TAG/g" kustomization.yaml
+        cd gitops-repo
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git commit -am "chore(gitops): auto-promote petclinic image to $IMAGE_TAG"
-        git push origin main
+        git checkout -b promote-$IMAGE_TAG
+        cd k8s
+        sed -i "s/newTag:.*/newTag: $IMAGE_TAG/g" kustomization.yaml
+        git commit -am "chore(release): bump petclinic image to $IMAGE_TAG"
+        git push origin promote-$IMAGE_TAG
+        gh pr create \
+          --repo $GITOPS_REPO \
+          --title "release(production): promote petclinic to $IMAGE_TAG" \
+          --body "Automated release PR for image tag $IMAGE_TAG. Review and merge to trigger Argo CD deployment." \
+          --base main \
+          --head promote-$IMAGE_TAG
