@@ -68,11 +68,11 @@ jobs:
         git checkout -b promote-$IMAGE_TAG
         cd k8s
         sed -i "s/newTag:.*/newTag: $IMAGE_TAG/g" kustomization.yaml
-        git commit -am "chore(release): bump petclinic image to $IMAGE_TAG"
+        git commit -am "chore(release): bump airstream image to $IMAGE_TAG"
         git push origin promote-$IMAGE_TAG
         gh pr create \
           --repo $GITOPS_REPO \
-          --title "release(production): promote petclinic to $IMAGE_TAG" \
+          --title "release(production): promote airstream to $IMAGE_TAG" \
           --body "Automated release PR for image tag $IMAGE_TAG. Review and merge to trigger Argo CD deployment." \
           --base main \
           --head promote-$IMAGE_TAG
